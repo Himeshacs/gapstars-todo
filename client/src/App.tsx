@@ -1,35 +1,63 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useState, useEffect } from "react";
+import TaskList from "./components/TaskList";
+import TaskInput from "./components/TaskInput";
+import TaskSearch from "./components/SearchBar";
+import {
+  fetchTasks,
+  addTask,
+  deleteTask,
+  updateTask,
+} from "./services/taskService";
+import "./App.css";
 
-function App() {
-  const [count, setCount] = useState(0)
+const App: React.FC = () => {
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    const getTasks = async () => {
+      const fetchedTasks = await fetchTasks(searchQuery);
+      setTasks(fetchedTasks);
+    };
+
+    getTasks();
+  }, [searchQuery]);
+
+  const handleAddTask = async (title: string) => {
+    const newTask = await addTask(title);
+    setTasks([...tasks, newTask]);
+  };
+
+  const handleDeleteTask = async (id: number) => {
+    await deleteTask(id);
+    setTasks(tasks.filter((task) => task.id !== id));
+  };
+
+  const handleToggleTaskStatus = async (id: number, isDone: boolean) => {
+    await updateTask(id, !isDone);
+    setTasks(
+      tasks.map((task) =>
+        task.id === id ? { ...task, isDone: !isDone } : task
+      )
+    );
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="container">
+      <h1>Task List</h1>
+      <div className="input-container">
+        <TaskSearch onSearch={setSearchQuery} />
+        <TaskInput onAdd={handleAddTask} />
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
+      <div className="task-list">
+        <TaskList
+          tasks={tasks}
+          onDelete={handleDeleteTask}
+          onToggle={handleToggleTaskStatus}
+        />
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    </div>
+  );
+};
 
-export default App
+export default App;
